@@ -1,10 +1,19 @@
 import os
 import json
 from flask import Flask
-from LatLongUTMConversion import bng_to_latlon
+from osgeo.osr import SpatialReference, CoordinateTransformation
+
+# Define BDA2000 / Bermuda 2000 National Grid (EPSG 3770)
+epsg3770 = SpatialReference()
+epsg3770.ImportFromEPSG(3770)
+
+# Define the wgs84 system (EPSG 4326)
+epsg4326 = SpatialReference()
+epsg4326.ImportFromEPSG(4326)
+
+bng2latlon = CoordinateTransformation(epsg3770, epsg4326)
 
 app = Flask(__name__)
-
 
 @app.route('/bng/')
 @app.route('/')
@@ -14,8 +23,8 @@ def index():
 
 @app.route('/bng/<int:easting>/<int:northing>')
 def bng(easting, northing):
-    coordinates = bng_to_latlon(easting, northing)
-    tmp = {"lat": coordinates[0], "long": coordinates[1]}
+    coordinates = bng2latlon.TransformPoint(easting, northing)
+    tmp = { "lat": coordinates[1], "lon": coordinates[0] }
     return json.dumps(tmp)
 
 
